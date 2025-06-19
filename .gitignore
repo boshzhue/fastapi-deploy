@@ -1,0 +1,20 @@
+# Abaikan file environment
+.env
+
+# Abaikan folder virtual environment (kalau kamu pakai)
+venv/
+env/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# VSCode
+.vscode/
+
+# Alembic
+alembic/versions/*.py
+
+# OS Files
+.DS_Store
+Thumbs.db
