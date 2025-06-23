@@ -1,16 +1,19 @@
-# File: security.py (revisi lengkap)
+# File: security.py
+
 from datetime import datetime, timedelta
 import os
 from typing import Optional
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Request, Cookie, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+
 from app.database import get_db
 from app.models import Pengguna, PeranEnum
 
-# Config
+# ==== Konfigurasi ====
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -19,13 +22,21 @@ SECURE_COOKIE = os.getenv("SECURE_COOKIE", "true").lower() == "true"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
+# ==== JWT Token ====
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
+    
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    # Perbaikan penting: tambahkan 'sub' untuk menyimpan user ID
+    to_encode.update({
+        "exp": expire,
+        "sub": str(data["id"])
+    })
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -35,22 +46,24 @@ def verify_password(plain_password: str, hashed_password: str):
 def get_password_hash(password: str):
     return pwd_context.hash(password)
 
+# ==== Ambil Token dari Cookie atau Header ====
 async def get_token(
     request: Request,
     token_from_header: Optional[str] = Depends(oauth2_scheme),
     token_from_cookie: Optional[str] = Cookie(None, alias="access_token")
 ):
-    # Prioritize cookie over header
     if token_from_cookie:
         return token_from_cookie
     if token_from_header:
         return token_from_header
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Tidak terautentikasi",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+# ==== Validasi dan Ambil User Berdasarkan JWT Token ====
 async def get_current_user(
     token: str = Depends(get_token), 
     db: Session = Depends(get_db)
@@ -60,19 +73,22 @@ async def get_current_user(
         detail="Tidak dapat memvalidasi kredensial",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
+        user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    
-    user = db.query(Pengguna).filter(Pengguna.id == user_id).first()
+
+    user = db.query(Pengguna).filter(Pengguna.id == int(user_id)).first()
     if user is None:
         raise credentials_exception
+
     return user
 
+# ==== Pembatasan Role ====
 def require_role(required_role: PeranEnum):
     def role_checker(current_user: Pengguna = Depends(get_current_user)):
         if current_user.peran != required_role:
@@ -83,6 +99,7 @@ def require_role(required_role: PeranEnum):
         return current_user
     return role_checker
 
+# ==== Cookie Helpers ====
 def set_auth_cookie(response: Response, token: str):
     response.set_cookie(
         key="access_token",
@@ -93,23 +110,20 @@ def set_auth_cookie(response: Response, token: str):
         samesite="lax",
         path="/"
     )
+
 def set_role_cookie(response: Response, role: str):
     response.set_cookie(
         key="user_role",
         value=role,
-        httponly=False,  # Agar bisa diakses oleh JavaScript (untuk UI)
+        httponly=False,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         secure=SECURE_COOKIE,
         samesite="lax",
         path="/"
     )
+
 def remove_auth_cookie(response: Response):
-    response.delete_cookie(
-        key="access_token",
-        path="/"
-    )
+    response.delete_cookie(key="access_token", path="/")
+
 def remove_role_cookie(response: Response):
-    response.delete_cookie(
-        key="user_role",
-        path="/"
-    )
+    response.delete_cookie(key="user_role", path="/")
