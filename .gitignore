@@ -2,7 +2,7 @@
 .env
 
 # Abaikan folder virtual environment (kalau kamu pakai)
-venv/
+.venv/
 env/
 
 # Python bytecode

@@ -11,8 +11,14 @@ import os
 
 load_dotenv()
 
-db_url = os.getenv("DATABASE_URL")
-
+db_url = (
+    f"mysql+pymysql://"
+    f"{os.getenv('DB_USER')}:"
+    f"{os.getenv('DB_PASSWORD')}@"
+    f"{os.getenv('DB_HOST')}:"
+    f"{os.getenv('DB_PORT')}/"
+    f"{os.getenv('DB_NAME')}"
+)
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
