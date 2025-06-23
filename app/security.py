@@ -90,7 +90,7 @@ def set_auth_cookie(response: Response, token: str):
         httponly=True,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         secure=SECURE_COOKIE,
-        samesite="lax",
+        samesite="none",
         path="/"
     )
 def set_role_cookie(response: Response, role: str):
@@ -100,7 +100,7 @@ def set_role_cookie(response: Response, role: str):
         httponly=False,  # Agar bisa diakses oleh JavaScript (untuk UI)
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         secure=SECURE_COOKIE,
-        samesite="lax",
+        samesite="none",
         path="/"
     )
 def remove_auth_cookie(response: Response):
