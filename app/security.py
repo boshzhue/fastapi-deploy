@@ -14,7 +14,7 @@ from app.models import Pengguna, PeranEnum
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-SECURE_COOKIE = os.getenv("SECURE_COOKIE", "false").lower() == "true"
+SECURE_COOKIE = os.getenv("SECURE_COOKIE", "true").lower() == "true"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
