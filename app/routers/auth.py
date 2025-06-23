@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app import email, security
+from app import security
 from app.models import Pengguna, ResetPassword, Sekolah
 from app.schemas.auth import LoginSchema, PasswordResetRequest, PasswordResetConfirm, SchoolNameResponse, SchoolSchema
 
