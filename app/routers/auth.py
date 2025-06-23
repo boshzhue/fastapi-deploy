@@ -44,54 +44,6 @@ async def logout(response: Response):
     security.remove_role_cookie(response)
     return {"message": "Logout berhasil"}
 
-@router.post("/request-reset-password", status_code=status.HTTP_200_OK)
-async def request_password_reset(
-    request: PasswordResetRequest,
-    db: Session = Depends(get_db)
-):
-    try:
-        await email.send_password_reset_email(request.email, db)
-        return {"message": "Instruksi reset password telah dikirim ke email Anda"}
-    except Exception as e:
-        raise HTTPException(    
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal mengirim email: {str(e)}"
-        )
-
-@router.post("/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(
-    form_data: PasswordResetConfirm,
-    db: Session = Depends(get_db)
-):
-    try:
-        payload = security.jwt.decode(
-            form_data.token,
-            security.SECRET_KEY,
-            algorithms=[security.ALGORITHM]
-        )
-        user_id = int(payload.get("sub"))
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token tidak valid atau kadaluarsa"
-        )
-
-    user = db.query(Pengguna).get(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pengguna tidak ditemukan"
-        )
-    
-    user.kata_sandi = security.get_password_hash(form_data.new_password)
-    db.commit()
-    
-    # Hapus semua token reset untuk pengguna ini
-    db.query(ResetPassword).filter(ResetPassword.id_pengguna == user_id).delete()
-    db.commit()
-    
-    return {"message": "Password berhasil direset"}
-
 @router.get("/sekolah", response_model=list[SchoolNameResponse])
 def get_all_sekolah(
     nama: str | None = None, 
