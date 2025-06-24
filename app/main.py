@@ -14,7 +14,10 @@ app.include_router(admin.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",  # untuk development lokal
+        "https://gayabelajar-life.vercel.app",  # untuk produksi (Vercel)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
