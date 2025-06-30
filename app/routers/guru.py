@@ -310,8 +310,12 @@ async def get_siswa_by_kategori(
 
         if kelas:
             query = query.filter(Siswa.kelas == kelas)
+
         if search:
-            query = query.filter(Siswa.nama_lengkap.ilike(f"%{search}%"))
+            query = query.filter(
+                (Siswa.nama_lengkap.ilike(f"%{search}%")) |
+                (Siswa.kelas.ilike(f"%{search}%"))
+            )
 
         if filter_kategori:
             query = query.filter(
@@ -343,7 +347,7 @@ async def get_siswa_by_kategori(
     
 @router.get("/siswa-export-simple", response_model=List[SiswaExportSimpleResponse])
 async def export_data_siswa_simple(
-    search: Optional[str] = None,  # Parameter pencarian baru
+    search: Optional[str] = None,  # Parameter pencarian
     db: Session = Depends(get_db),
     current_user: Pengguna = Depends(security.require_role(PeranEnum.guru))
 ):
@@ -362,10 +366,11 @@ async def export_data_siswa_simple(
             .subquery()
         )
         
-        # Query utama dengan filter tambahan
+        # Query utama dengan field kelas ditambahkan
         query = (
             db.query(
                 Siswa.nama_lengkap,
+                Siswa.kelas,  # Tambahkan field kelas
                 Siswa.nama_sekolah.label('sekolah'),
                 HasilGayaBelajar.kategori_pemrosesan,
                 HasilGayaBelajar.kategori_persepsi,
@@ -379,14 +384,18 @@ async def export_data_siswa_simple(
             .filter(Siswa.nama_sekolah == current_guru.nama_sekolah)
         )
         
-        # Tambahkan filter pencarian jika parameter search diisi
+        # Tambahkan filter pencarian untuk nama_lengkap dan kelas
         if search:
-            query = query.filter(Siswa.nama_lengkap.ilike(f"%{search}%"))
+            query = query.filter(
+                (Siswa.nama_lengkap.ilike(f"%{search}%")) |
+                (Siswa.kelas.ilike(f"%{search}%"))
+            )
         
         results = query.all()
         
         return [{
             "nama_lengkap": r.nama_lengkap,
+            "kelas": r.kelas,  # Tambahkan kelas ke response
             "sekolah": r.sekolah,
             "kategori_pemrosesan": r.kategori_pemrosesan,
             "kategori_persepsi": r.kategori_persepsi,
