@@ -144,6 +144,7 @@ class SiswaKategoriResponse(BaseModel):
 
 class SiswaExportSimpleResponse(BaseModel):
     nama_lengkap: str
+    kelas: str
     sekolah: str
     kategori_pemrosesan: str
     kategori_persepsi: str
